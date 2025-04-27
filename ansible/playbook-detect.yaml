@@ -1,1 +1,37 @@
+---
+- name: Detect Network Issues
+  hosts: all
+  become: yes
+  tasks:
+    - name: Check if the gateway is reachable
+      command: ping -c 4 {{ gateway }}
+      register: gateway_status
+      ignore_errors: yes
+
+    - name: Check if DNS is reachable
+      command: nslookup {{ dns_server }}
+      register: dns_status
+      ignore_errors: yes
+
+    - name: Check if the network is reachable
+      command: ping -c 4 8.8.8.8
+      register: network_status
+      ignore_errors: yes
+
+    - name: Display gateway status
+      debug:
+        msg: "Gateway reachable: {{ gateway_status.rc == 0 }}"
+
+    - name: Display DNS status
+      debug:
+        msg: "DNS reachable: {{ dns_status.rc == 0 }}"
+
+    - name: Display network status
+      debug:
+        msg: "Network reachable: {{ network_status.rc == 0 }}"
+
+    - name: Fail if any issue detected
+      fail:
+        msg: "Network issue detected"
+      when: gateway_status.rc != 0 or dns_status.rc != 0 or network_status.rc != 0
 
