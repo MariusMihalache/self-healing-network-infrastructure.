@@ -1,0 +1,24 @@
+---
+- name: Repair Network Issues
+  hosts: all
+  become: yes
+  tasks:
+    - name: Reset gateway configuration
+      command: /bin/systemctl restart network.service
+      when: gateway_status.rc != 0
+
+    - name: Reset DNS configuration
+      command: /bin/systemctl restart systemd-resolved
+      when: dns_status.rc != 0
+
+    - name: Change DNS server to fallback
+      command: nmcli dev modify eth0 ipv4.dns "8.8.8.8"
+      when: dns_status.rc != 0
+
+    - name: Reconfigure routing if gateway is down
+      command: ip route add default via {{ gateway }}
+      when: gateway_status.rc != 0
+
+    - name: Restart network services
+      command: /bin/systemctl restart network.service
+      when: network_status.rc != 0
